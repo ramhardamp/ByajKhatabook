@@ -46,7 +46,7 @@ jobs:
           set -euo pipefail
           keytool -genkeypair -v             -keystore release.keystore             -storepass "CI-$GITHUB_RUN_ID-store"             -keypass "CI-$GITHUB_RUN_ID-key"             -alias release             -keyalg RSA -keysize 4096 -validity 10000             -dname "CN=Guru Shree App, OU=Release, O=BabaSitaRam, L=Indore, ST=Madhya Pradesh, C=IN"
           echo "RELEASE_STORE_PASSWORD=CI-$GITHUB_RUN_ID-store" >> "$GITHUB_ENV"
-          echo "RELEASE_KEY_PASSWORD=CI-$GITHUB_RUN_ID-key" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_PASSWORD=CI-$GITHUB_RUN_ID-store" >> "$GITHUB_ENV"
 
       - name: Build signed release APK
         run: |
