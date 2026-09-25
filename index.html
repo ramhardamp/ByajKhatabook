@@ -1332,7 +1332,8 @@ img, svg, video, canvas { max-width:100% !important; height:auto; }
 
 const APP_NAME = 'BabaSitaRamProKhatbook';
 const BACKUP_FILENAME = 'BabaSitaRamProKhatbook.vaultbak';
-const APP_LOGO_VERSION = 4;
+const APP_LOGO_VERSION = 5;
+const BUNDLED_LOGO = (location.host === 'appassets.androidplatform.net') ? '/assets/logo.webp' : 'logo.webp';
 
 let businesses = [], currentBizId = 1, seqBiz = 1;
 let customers = [], khataTxns = [], byaajPayments = [], expenses = [], deletedItems = [], auditLog = [], recurring = [];
@@ -1353,8 +1354,8 @@ let settings = {
   backupPwd: '',
   branding: {
     logo: '📱',
-    logoImage: 'logo.webp',
-    babaImage: 'logo.webp',
+    logoImage: BUNDLED_LOGO,
+    babaImage: BUNDLED_LOGO,
     appLogoVersion: APP_LOGO_VERSION,
     line1: 'Baba Sita Ram Pro Digital Khata',
     line2: 'Offline-first · encrypted local vault.'
@@ -1561,12 +1562,12 @@ function applyVaultSnapshot(data) {
   seqDel = Number(data.seqDel) || 1; seqAudit = Number(data.seqAudit) || 1; seqRec = Number(data.seqRec) || 1; seqDiary = Number(data.seqDiary) || 1;
   ppEnabled = data.ppEnabled || {};
   if (data.settings) settings = { ...settings, ...data.settings };
-  if (!settings.branding) settings.branding = { logo: '📱', logoImage: 'logo.webp', babaImage: 'logo.webp', line1: 'Baba Sita Ram Pro Digital Khata', line2: 'Offline-first · encrypted local vault.' };
-  if (!settings.branding.logoImage) settings.branding.logoImage = 'logo.webp';
-  if (!settings.branding.babaImage) settings.branding.babaImage = 'logo.webp';
+  if (!settings.branding) settings.branding = { logo: '📱', logoImage: BUNDLED_LOGO, babaImage: BUNDLED_LOGO, line1: 'Baba Sita Ram Pro Digital Khata', line2: 'Offline-first · encrypted local vault.' };
+  if (!settings.branding.logoImage) settings.branding.logoImage = BUNDLED_LOGO;
+  if (!settings.branding.babaImage) settings.branding.babaImage = BUNDLED_LOGO;
   if (settings.branding.appLogoVersion !== APP_LOGO_VERSION) {
-    settings.branding.logoImage = 'logo.webp';
-    settings.branding.babaImage = 'logo.webp';
+    settings.branding.logoImage = BUNDLED_LOGO;
+    settings.branding.babaImage = BUNDLED_LOGO;
     settings.branding.appLogoVersion = APP_LOGO_VERSION;
   }
   if (typeof settings.backupPwd !== 'string') settings.backupPwd = '';
@@ -3753,7 +3754,7 @@ function updateTopBar() {
 /* ============ INIT ============ */
 async function initApp() {
   document.getElementById('entryDate').valueAsDate = new Date();
-  document.getElementById('loginLogoImg').src = 'logo.webp';
+  document.getElementById('loginLogoImg').src = BUNDLED_LOGO;
   try {
     await loadData();
     processRecurring();
