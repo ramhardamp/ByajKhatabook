@@ -90,7 +90,7 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
           disable-animations: true
           script: |
-            set -euo pipefail
+            set -eu
             adb install -r "$GITHUB_WORKSPACE/$APK"
             adb shell am force-stop "$PACKAGE"
             adb shell monkey -p "$PACKAGE" 1
