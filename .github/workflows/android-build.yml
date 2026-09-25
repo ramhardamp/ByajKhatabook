@@ -107,15 +107,8 @@ jobs:
           disable-linux-hw-accel: false
           emulator-boot-timeout: 600
           script: |
-            set -eu
             adb wait-for-device
-            if ! adb install -r "$GITHUB_WORKSPACE/$APK"; then
-              echo "First adb install failed; reconnecting once..."
-              adb reconnect || true
-              sleep 5
-              adb wait-for-device
-              adb install -r "$GITHUB_WORKSPACE/$APK"
-            fi
+            adb install -r "$GITHUB_WORKSPACE/$APK" || (adb reconnect || true; sleep 5; adb wait-for-device; adb install -r "$GITHUB_WORKSPACE/$APK")
             adb shell am force-stop "$PACKAGE"
             adb shell monkey -p "$PACKAGE" 1
             sleep 12
@@ -134,11 +127,7 @@ jobs:
             adb shell monkey -p "$PACKAGE" 1 >/dev/null
             sleep 10
             adb logcat -d -t 1000 > runtime-logcat.txt
-            if grep -Eiq "FATAL EXCEPTION|AndroidRuntime.*FATAL|Process: $PACKAGE" runtime-logcat.txt; then
-              echo "Runtime crash detected"
-              tail -200 runtime-logcat.txt
-              exit 1
-            fi
+            grep -Eiq "FATAL EXCEPTION|AndroidRuntime.*FATAL|Process: $PACKAGE" runtime-logcat.txt && { echo "Runtime crash detected"; tail -200 runtime-logcat.txt; exit 1; } || true
             echo "INSTALL_RUNTIME=PASS" | tee -a verification.txt
 
       - name: Upload runtime evidence
