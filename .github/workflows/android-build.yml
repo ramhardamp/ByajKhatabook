@@ -131,6 +131,56 @@ jobs:
             grep -Eiq "FATAL EXCEPTION|AndroidRuntime.*FATAL|Process: $PACKAGE" runtime-logcat.txt && { echo "Runtime crash detected"; tail -200 runtime-logcat.txt; exit 1; } || [ $? -eq 1 ]
             echo "INSTALL_RUNTIME=PASS" | tee -a verification.txt
 
+            # Core feature navigation smoke: create local account, then open every primary tab.
+            adb shell input tap 400 730
+            adb shell input text 'Test%sUser'
+            adb shell input tap 400 895
+            adb shell input text '9876543210'
+            adb shell input tap 400 1065
+            adb shell input text 'TestPass123'
+            adb shell input tap 540 1220
+            sleep 8
+            adb shell uiautomator dump /sdcard/feature-home.xml >/dev/null
+            adb pull /sdcard/feature-home.xml feature-home.xml >/dev/null
+            test -s feature-home.xml
+            grep -q 'Ledger' feature-home.xml
+            grep -q 'KHATA' feature-home.xml
+            grep -q 'BYAAJ' feature-home.xml
+            grep -q 'Tools' feature-home.xml
+            grep -q 'Diary' feature-home.xml
+
+            adb shell input tap 225 2220
+            sleep 2
+            adb shell uiautomator dump /sdcard/feature-ledger.xml >/dev/null
+            adb pull /sdcard/feature-ledger.xml feature-ledger.xml >/dev/null
+            grep -qi 'Ledger' feature-ledger.xml
+
+            adb shell input tap 360 2220
+            sleep 2
+            adb shell uiautomator dump /sdcard/feature-khata.xml >/dev/null
+            adb pull /sdcard/feature-khata.xml feature-khata.xml >/dev/null
+            grep -qi 'Khata' feature-khata.xml
+
+            adb shell input tap 500 2220
+            sleep 2
+            adb shell uiautomator dump /sdcard/feature-byaaj.xml >/dev/null
+            adb pull /sdcard/feature-byaaj.xml feature-byaaj.xml >/dev/null
+            grep -qi 'Byaaj' feature-byaaj.xml
+
+            adb shell input tap 640 2220
+            sleep 2
+            adb shell uiautomator dump /sdcard/feature-tools.xml >/dev/null
+            adb pull /sdcard/feature-tools.xml feature-tools.xml >/dev/null
+            grep -qi 'Tools' feature-tools.xml
+
+            adb shell input tap 770 2220
+            sleep 2
+            adb shell uiautomator dump /sdcard/feature-diary.xml >/dev/null
+            adb pull /sdcard/feature-diary.xml feature-diary.xml >/dev/null
+            grep -qi 'Diary' feature-diary.xml
+
+            echo "CORE_FEATURE_NAVIGATION=PASS" | tee core-feature-verification.txt
+
       - name: Upload runtime evidence
         if: always()
         uses: actions/upload-artifact@v4
