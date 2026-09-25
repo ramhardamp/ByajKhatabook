@@ -145,8 +145,9 @@ jobs:
 
       - name: Publish GitHub Release
         if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          export GH_TOKEN="$GITHUB_TOKEN"
           TAG="v$GITHUB_RUN_NUMBER"
           gh release create "$TAG" "$APK"             --repo "$GITHUB_REPOSITORY"             --title "Guru Shree App $TAG"             --notes "Signed APK. APK signature/structure checks and Android emulator install/runtime smoke test passed."
