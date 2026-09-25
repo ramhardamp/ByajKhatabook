@@ -1,4 +1,5 @@
 name: Android Signed APK - Build Verify Install Runtime
+# POSIX-sh runtime gate: every if block closes with fi.
 
 on:
   push:
