@@ -1,0 +1,135 @@
+name: Android Signed APK - Build Verify Install Runtime
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  build-verify-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PACKAGE: com.babasitaram.pro
+      APK: app/build/outputs/apk/release/app-release.apk
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Create Gradle wrapper
+        run: |
+          set -euo pipefail
+          gradle wrapper --gradle-version 8.9 --distribution-type bin
+          chmod +x gradlew
+
+      - name: Generate CI signing key
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -v             -keystore release.keystore             -storepass "CI-$GITHUB_RUN_ID-store"             -keypass "CI-$GITHUB_RUN_ID-key"             -alias release             -keyalg RSA -keysize 4096 -validity 10000             -dname "CN=Guru Shree App, OU=Release, O=BabaSitaRam, L=Indore, ST=Madhya Pradesh, C=IN"
+          echo "RELEASE_STORE_PASSWORD=CI-$GITHUB_RUN_ID-store" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_PASSWORD=CI-$GITHUB_RUN_ID-key" >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon clean assembleRelease
+          test -s "$APK"
+
+      - name: Verify APK with apksigner, aapt and unzip
+        run: |
+          set -euo pipefail
+          BT="$(ls -1 "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          APKSIGNER="$ANDROID_HOME/build-tools/$BT/apksigner"
+          AAPT="$ANDROID_HOME/build-tools/$BT/aapt"
+          "$APKSIGNER" verify --verbose "$APK"
+          "$AAPT" dump badging "$APK" | tee apk-badging.txt
+          grep -q "package: name='$PACKAGE'" apk-badging.txt
+          grep -q "application-label:'Guru Shree App'" apk-badging.txt
+          unzip -t "$APK" >/dev/null
+          unzip -l "$APK" | grep -q "assets/index.html"
+          unzip -l "$APK" | grep -q "assets/logo.webp"
+          echo "APK_VERIFY=PASS" | tee verification.txt
+
+      - name: Upload signed APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Guru-Shree-App-signed-release
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            apk-badging.txt
+            verification.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Install and runtime smoke test on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            adb install -r "$GITHUB_WORKSPACE/$APK"
+            adb shell am force-stop "$PACKAGE"
+            adb shell monkey -p "$PACKAGE" 1
+            sleep 12
+            adb shell dumpsys package "$PACKAGE" | grep -q "$PACKAGE"
+            adb shell uiautomator dump /sdcard/window.xml >/dev/null
+            adb pull /sdcard/window.xml runtime-window.xml >/dev/null
+            test -s runtime-window.xml
+            adb logcat -c
+            adb shell am force-stop "$PACKAGE"
+            adb shell monkey -p "$PACKAGE" 1 >/dev/null
+            sleep 10
+            adb logcat -d -t 1000 > runtime-logcat.txt
+            if grep -Eiq "FATAL EXCEPTION|AndroidRuntime.*FATAL|Process: $PACKAGE" runtime-logcat.txt; then
+              echo "Runtime crash detected"
+              tail -200 runtime-logcat.txt
+              exit 1
+            fi
+            grep -q "Baba Sita Ram Pro Digital Khata" runtime-window.xml || true
+            adb shell input swipe 540 1500 540 500 600
+            sleep 2
+            adb shell input swipe 540 1500 540 500 600
+            echo "INSTALL_RUNTIME=PASS" | tee -a verification.txt
+
+      - name: Upload runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-verification-evidence
+          path: |
+            runtime-window.xml
+            runtime-logcat.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        if: success()
+        run: |
+          set -euo pipefail
+          export GH_TOKEN="$GITHUB_TOKEN"
+          TAG="v$GITHUB_RUN_NUMBER"
+          gh release create "$TAG" "$APK"             --repo "$GITHUB_REPOSITORY"             --title "Guru Shree App $TAG"             --notes "Signed APK. APK signature/structure checks and Android emulator install/runtime smoke test passed."
