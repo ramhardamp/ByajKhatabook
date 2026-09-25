@@ -128,7 +128,7 @@ jobs:
             adb shell monkey -p "$PACKAGE" 1 >/dev/null
             sleep 10
             adb logcat -d -t 1000 > runtime-logcat.txt
-            grep -Eiq "FATAL EXCEPTION|AndroidRuntime.*FATAL|Process: $PACKAGE" runtime-logcat.txt && { echo "Runtime crash detected"; tail -200 runtime-logcat.txt; exit 1; }
+            grep -Eiq "FATAL EXCEPTION|AndroidRuntime.*FATAL|Process: $PACKAGE" runtime-logcat.txt && { echo "Runtime crash detected"; tail -200 runtime-logcat.txt; exit 1; } || [ $? -eq 1 ]
             echo "INSTALL_RUNTIME=PASS" | tee -a verification.txt
 
       - name: Upload runtime evidence
