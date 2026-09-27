@@ -1,107 +1,69 @@
 package com.babasitaram.pro;
 
-import android.app.Activity;
-import android.os.Bundle;
-import android.util.Log;
-import android.webkit.ConsoleMessage;
-import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
-import android.webkit.WebViewClient;
-import androidx.webkit.WebViewAssetLoader;
-import androidx.webkit.WebViewClientCompat;
+import android.app.*;
+import android.content.*;
+import android.graphics.*;
+import android.graphics.pdf.PdfDocument;
+import android.net.Uri;
+import android.os.*;
+import android.text.*;
+import android.view.*;
+import android.widget.*;
+import org.json.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.text.*;
+import java.util.*;
 
 public class MainActivity extends Activity {
-    private static final String TAG = "BabaSitaRamRuntime";
-    private WebView webView;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        webView = new WebView(this);
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-        settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(false);
-        settings.setBuiltInZoomControls(false);
-        settings.setDisplayZoomControls(false);
-        settings.setLoadsImagesAutomatically(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-
-        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
-                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
-                .build();
-
-        webView.setWebViewClient(new WebViewClientCompat() {
-            @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return assetLoader.shouldInterceptRequest(request.getUrl());
-            }
-
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                if (getIntent().getBooleanExtra("CI_FEATURE_TEST", false)) {
-                    runCiFeatureTest(view);
-                }
-            }
-        });
-
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onConsoleMessage(ConsoleMessage message) {
-                Log.d(TAG, message.message());
-                return true;
-            }
-        });
-
-        setContentView(webView);
-        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
-    }
-
-    private void runCiFeatureTest(WebView view) {
-        String script = "(function(){"
-                + "try{"
-                + "var out={};"
-                + "switchTab('home'); out.home=!!document.querySelector('#s-home.active');"
-                + "switchTab('ledger'); out.ledger=!!document.querySelector('#s-ledger.active');"
-                + "goKhataTile(); out.khata=!!document.querySelector('#s-ledger.active') && preferredDetailMode==='khata';"
-                + "goByaajTile(); out.byaaj=!!document.querySelector('#s-ledger.active') && preferredDetailMode==='byaaj';"
-                + "switchTab('tools'); out.tools=!!document.querySelector('#s-tools.active');"
-                + "switchTab('diary'); out.diary=!!document.querySelector('#s-diary.active');"
-                + "switchTab('home');"
-                + "setTimeout(function(){"
-                + "var li=document.querySelector('#topAvatar img');"
-                + "var hi=document.querySelector('#heroBaba img');"
-                + "out.logo=!!(li&&li.complete&&li.naturalWidth>0&&li.src.indexOf('logo.webp')>=0);"
-                + "out.hero=!!(hi&&hi.complete&&hi.naturalWidth>0&&hi.src.indexOf('logo.webp')>=0);"
-                + "console.log('CI_FEATURES_RESULT:'+JSON.stringify(out));"
-                + "},2500);"
-                + "}catch(e){console.log('CI_FEATURES_FAIL:'+String(e&&e.stack||e));}"
-                + "})();";
-        view.evaluateJavascript(script, value -> Log.d(TAG, "CI_FEATURE_EVAL_DONE"));
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (webView != null) {
-            webView.destroy();
-            webView = null;
-        }
-        super.onDestroy();
-    }
+    private LedgerStore store; private LinearLayout content; private final ArrayDeque<String> stack=new ArrayDeque<>(); private String screen="home"; private int customerId=-1;
+    private static final int EXPORT=9001,IMPORT=9002; private static final int BG=Color.rgb(247,248,252),TEXT=Color.rgb(31,35,45),MUTED=Color.rgb(100,105,120),RED=Color.rgb(200,35,35),GREEN=Color.rgb(20,140,65);
+    @Override public void onCreate(Bundle b){super.onCreate(b);try{store=new LedgerStore(this);build();ReminderScheduler.schedule(this);if(Build.VERSION.SDK_INT>=33)requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},7002);}catch(Exception e){fatal(e);}}
+    private void fatal(Exception e){new AlertDialog.Builder(this).setTitle("Data storage error").setMessage("Local database could not be opened safely. Your data was not deleted.\n\n"+e.getMessage()).setPositiveButton("Retry",(d,w)->recreate()).setNegativeButton("Exit",null).show();}
+    private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
+    private TextView tv(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setPadding(dp(12),dp(7),dp(12),dp(7));return v;}
+    private Button btn(String s){Button b=new Button(this);b.setText(s);b.setAllCaps(false);b.setMinHeight(dp(46));return b;}
+    private EditText input(String s){EditText e=new EditText(this);e.setHint(s);e.setSingleLine(true);e.setPadding(dp(10),0,dp(10),0);return e;}
+    private LinearLayout box(){LinearLayout x=new LinearLayout(this);x.setOrientation(LinearLayout.VERTICAL);x.setPadding(dp(12),dp(10),dp(12),dp(10));x.setBackgroundColor(Color.WHITE);return x;}
+    private void add(View v){content.addView(v,new LinearLayout.LayoutParams(-1,-2));}
+    private void build(){LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);LinearLayout bar=new LinearLayout(this);bar.setGravity(Gravity.CENTER_VERTICAL);ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.logo);logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);bar.addView(logo,new LinearLayout.LayoutParams(dp(48),dp(54)));TextView b=tv("Guru Shree",20,TEXT);b.setTypeface(null,1);bar.addView(b,new LinearLayout.LayoutParams(0,dp(54),1));Button s=btn("⚙");s.setOnClickListener(v->go("settings"));bar.addView(s,new LinearLayout.LayoutParams(dp(54),dp(54)));root.addView(bar);ScrollView sv=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);sv.addView(content);root.addView(sv,new LinearLayout.LayoutParams(-1,0,1));LinearLayout nav=new LinearLayout(this);String[] n={"⌂ Home","👥 Customers","₹ Byaaj","☷ More"};String[] ids={"home","ledger","byaaj","more"};for(int i=0;i<4;i++){Button x=btn(n[i]);String id=ids[i];x.setOnClickListener(v->go(id));nav.addView(x,new LinearLayout.LayoutParams(0,dp(58),1));}root.addView(nav);setContentView(root);render();}
+    private void go(String s){if(s.equals(screen))return;stack.push(screen);screen=s;render();}
+    private void back(){if(!stack.isEmpty()){screen=stack.pop();render();}else if(!screen.equals("home")){screen="home";render();}else new AlertDialog.Builder(this).setTitle("Exit Guru Shree?").setNegativeButton("Stay",null).setPositiveButton("Exit",(d,w)->finish()).show();}
+    @Override public void onBackPressed(){back();}
+    private JSONArray cs(){return store.customers();} private JSONObject settings(){return store.settings();}
+    private JSONObject cust(int id){for(int i=0;i<cs().length();i++){JSONObject c=cs().optJSONObject(i);if(c!=null&&c.optInt("id")==id)return c;}return null;}
+    private String nm(JSONObject c){return c.optString("name","Customer");} private String money(double x){return "₹"+String.format(Locale.US,"%,.2f",Math.abs(x));}
+    private long date(String s){for(String f:new String[]{"EEE MMM dd HH:mm:ss zzz yyyy","yyyy-MM-dd'T'HH:mm:ss.SSS'Z'","yyyy-MM-dd"})try{return new SimpleDateFormat(f,Locale.US).parse(s).getTime();}catch(Exception e){}return 0;}
+    private double interest(JSONObject l){double p=l.optDouble("principal"),r=l.optDouble("rate");long st=date(l.optString("rawStartDate",l.optString("startDate")));if(st<=0)return 0;double m=Math.max(0,(System.currentTimeMillis()-st)/(30.4375*24*3600*1000));if("compound".equalsIgnoreCase(l.optString("interestType"))){int f=Math.max(1,l.optInt("compFreq",12));return p*(Math.pow(1+r/100.0/f,m*f/12.0)-1);}return p*r*m/100;}
+    private double paid(JSONObject c,JSONObject l){double p=0;for(int i=0;i<store.loans().length();i++){JSONObject x=store.loans().optJSONObject(i);if(x!=null&&x.optInt("customerId")==c.optInt("id")&&x.optInt("loanId")==l.optInt("id"))p+=x.optDouble("amount");}return p;}
+    private double loanDue(JSONObject c,JSONObject l){return Math.max(0,l.optDouble("principal")+interest(l)-paid(c,l));}
+    private double due(JSONObject c){double x=0;if(c.optJSONObject("khata")!=null)x+=Math.max(0,-c.optJSONObject("khata").optDouble("balance"));JSONObject b=c.optJSONObject("byaaj");if(b!=null&&b.optJSONArray("loans")!=null)for(int i=0;i<b.optJSONArray("loans").length();i++)x+=loanDue(c,b.optJSONArray("loans").optJSONObject(i));return x;}
+    private void render(){content.removeAllViews();try{if("home".equals(screen))home();else if("ledger".equals(screen))ledger();else if("byaaj".equals(screen))byaaj();else if("customer".equals(screen))detail();else if("settings".equals(screen))settingsPage();else if("more".equals(screen))more();else if("recovery".equals(screen))recovery();else if("reports".equals(screen))reports();else if("expenses".equals(screen))expenses();else if("diary".equals(screen))diary();else if("business".equals(screen))business();else home();}catch(Exception e){add(tv("Error: "+e.getMessage(),14,RED));}}
+    private void home(){add(tv("Dashboard",24,TEXT));double total=0;int pending=0;for(int i=0;i<cs().length();i++){JSONObject c=cs().optJSONObject(i);if(c!=null){double d=due(c);total+=d;if(d>0)pending++;}}LinearLayout c=box();c.addView(tv("कुल बकाया",13,MUTED));c.addView(tv(money(total),30,RED));c.addView(tv(pending+" customers pending",13,MUTED));add(c);add(btnAction("📌 Recovery","recovery"));add(btnAction("📊 Reports","reports"));add(tv("Recent customers",18,TEXT));for(int i=Math.max(0,cs().length()-20);i<cs().length();i++)customerRow(cs().optJSONObject(i));if(cs().length()==0)add(tv("अभी कोई customer नहीं है। Customers से पहला customer जोड़ें।",14,MUTED));}
+    private Button btnAction(String t,String id){Button b=btn(t);b.setOnClickListener(v->go(id));add(b);return b;}
+    private void customerRow(JSONObject c){Button b=btn(nm(c)+"  •  "+money(due(c)));b.setGravity(Gravity.LEFT|Gravity.CENTER_VERTICAL);b.setOnClickListener(v->{customerId=c.optInt("id");go("customer");});add(b);}
+    private void ledger(){add(tv("Customers / Ledger",24,TEXT));EditText search=input("Search name or mobile");add(search);Button addc=btn("＋ Add Customer");addc.setOnClickListener(v->addCustomer());add(addc);LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);add(list);Runnable refresh=()->{list.removeAllViews();String q=search.getText().toString().trim().toLowerCase(Locale.US);for(int i=0;i<cs().length();i++){JSONObject c=cs().optJSONObject(i);if(c!=null&&(q.isEmpty()||nm(c).toLowerCase(Locale.US).contains(q)||c.optString("phone").contains(q))){Button b=btn(nm(c)+"\n"+c.optString("phone")+" • "+money(due(c)));b.setGravity(Gravity.LEFT);b.setOnClickListener(v->{customerId=c.optInt("id");go("customer");});list.addView(b);}}};search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int b,int d){}public void onTextChanged(CharSequence s,int a,int b,int d){refresh.run();}public void afterTextChanged(Editable e){}});refresh.run();}
+    private void addCustomer(){LinearLayout f=new LinearLayout(this);f.setOrientation(LinearLayout.VERTICAL);EditText n=input("Customer name"),p=input("Mobile");f.addView(n);f.addView(p);new AlertDialog.Builder(this).setTitle("Add Customer").setView(f).setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{try{String name=n.getText().toString().trim();if(name.isEmpty())throw new Exception("Name required");JSONObject c=new JSONObject().put("id",store.next("seqCust")).put("businessId",1).put("name",name).put("phone",p.getText().toString().trim()).put("khata",new JSONObject().put("balance",0)).put("byaaj",new JSONObject().put("loans",new JSONArray()));cs().put(c);store.save();render();}catch(Exception e){toast(e.getMessage());}}).show();}
+    private void detail(){JSONObject c=cust(customerId);if(c==null){screen="ledger";render();return;}add(tv("Customer",24,TEXT));add(tv(nm(c)+"\n"+c.optString("phone"),15,MUTED));add(tv("Outstanding: "+money(due(c)),22,RED));Button u=btn("📤 Udhar");u.setOnClickListener(v->txn(c,false));add(u);Button j=btn("📥 Jama");j.setOnClickListener(v->txn(c,true));add(j);Button l=btn("📈 Add Byaaj Loan");l.setOnClickListener(v->loan(c));add(l);Button w=btn("WhatsApp / Share");w.setOnClickListener(v->share(c));add(w);Button s=btn("SMS Reminder");s.setOnClickListener(v->sms(c));add(s);JSONObject b=c.optJSONObject("byaaj");if(b!=null&&b.optJSONArray("loans")!=null)for(int i=0;i<b.optJSONArray("loans").length();i++){JSONObject x=b.optJSONArray("loans").optJSONObject(i);add(tv("Loan #"+x.optInt("id")+" • "+money(loanDue(c,x)),14,TEXT));Button pay=btn("Payment");pay.setOnClickListener(v->payment(c,x));add(pay);}}
+    private void txn(JSONObject c,boolean jama){EditText a=input("Amount ₹");new AlertDialog.Builder(this).setTitle(jama?"Jama":"Udhar").setView(a).setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{try{double x=Double.parseDouble(a.getText().toString());if(x<=0)throw new Exception();JSONObject k=c.optJSONObject("khata");double old=k.optDouble("balance");k.put("balance",jama?old+x:old-x);store.txns().put(new JSONObject().put("id",store.next("seqTxn")).put("customerId",c.optInt("id")).put("type",jama?"jama":"udhaar").put("amount",x).put("date",new Date().toString()));store.save();render();}catch(Exception e){toast("Invalid amount");}}).show();}
+    private void loan(JSONObject c){LinearLayout f=new LinearLayout(this);f.setOrientation(LinearLayout.VERTICAL);EditText p=input("Principal ₹"),r=input("Rate % / month"),d=input("Duration months");Spinner t=new Spinner(this);t.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"simple","compound"}));f.addView(p);f.addView(r);f.addView(d);f.addView(t);new AlertDialog.Builder(this).setTitle("New Byaaj Loan").setView(f).setNegativeButton("Cancel",null).setPositiveButton("Create",(x,w)->{try{double pr=Double.parseDouble(p.getText().toString()),rt=Double.parseDouble(r.getText().toString());int du=Integer.parseInt(d.getText().toString());JSONObject l=new JSONObject().put("id",store.next("seqTxn")).put("principal",pr).put("rate",rt).put("duration",du).put("interestType",t.getSelectedItem().toString()).put("compFreq",12).put("rawStartDate",new Date().toString()).put("partPaid",0);c.optJSONObject("byaaj").optJSONArray("loans").put(l);store.save();render();}catch(Exception e){toast("Invalid loan");}}).show();}
+    private void payment(JSONObject c,JSONObject l){EditText a=input("Payment ₹");new AlertDialog.Builder(this).setTitle("Loan Payment").setView(a).setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{try{double x=Double.parseDouble(a.getText().toString());if(x<=0||x>loanDue(c,l)+.01)throw new Exception();store.loans().put(new JSONObject().put("id",store.next("seqTxn")).put("customerId",c.optInt("id")).put("loanId",l.optInt("id")).put("amount",x).put("date",new Date().toString()));l.put("partPaid",l.optDouble("partPaid")+x);store.save();render();}catch(Exception e){toast("Invalid payment");}}).show();}
+    private void byaaj(){add(tv("Byaaj",24,TEXT));for(int i=0;i<cs().length();i++){JSONObject c=cs().optJSONObject(i);if(c!=null&&c.optJSONObject("byaaj")!=null&&c.optJSONObject("byaaj").optJSONArray("loans")!=null&&c.optJSONObject("byaaj").optJSONArray("loans").length()>0)customerRow(c);}if(cs().length()==0)add(tv("No customers",14,MUTED));}
+    private void more(){add(tv("Tools",24,TEXT));btnAction("📌 Recovery","recovery");btnAction("📊 Reports","reports");btnAction("💸 Expenses","expenses");btnAction("📓 Diary","diary");btnAction("🏪 Businesses","business");btnAction("⚙ Settings","settings");Button b=btn("💾 Backup / Restore");b.setOnClickListener(v->backup());add(b);}
+    private void recovery(){add(tv("Recovery",24,TEXT));double total=0;int n=0;for(int i=0;i<cs().length();i++){JSONObject c=cs().optJSONObject(i);if(c!=null&&due(c)>0){n++;total+=due(c);customerRow(c);}}add(tv("Pending: "+n+"  •  Outstanding: "+money(total),16,RED));}
+    private void reports(){add(tv("Reports",24,TEXT));double due=0;for(int i=0;i<cs().length();i++)due+=due(cs().optJSONObject(i));add(tv("Customers: "+cs().length()+"\nOutstanding: "+money(due),16,TEXT));Button p=btn("Create PDF");p.setOnClickListener(v->pdf());add(p);}
+    private void expenses(){add(tv("Expenses",24,TEXT));Button b=btn("＋ Add Expense");b.setOnClickListener(v->{EditText a=input("Amount ₹"),c=input("Category");LinearLayout f=new LinearLayout(this);f.setOrientation(LinearLayout.VERTICAL);f.addView(c);f.addView(a);new AlertDialog.Builder(this).setTitle("Expense").setView(f).setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{try{store.data().optJSONArray("expenses").put(new JSONObject().put("id",store.next("seqExp")).put("category",c.getText().toString()).put("amount",Double.parseDouble(a.getText().toString())).put("date",new Date().toString()));store.save();render();}catch(Exception e){toast("Invalid expense");}}).show();});add(b);for(int i=0;i<store.data().optJSONArray("expenses").length();i++){JSONObject x=store.data().optJSONArray("expenses").optJSONObject(i);add(tv(x.optString("category")+" • "+money(x.optDouble("amount")),14,TEXT));}}
+    private void diary(){add(tv("Diary",24,TEXT));Button b=btn("＋ Add Note");b.setOnClickListener(v->{EditText t=input("Note");new AlertDialog.Builder(this).setTitle("Diary").setView(t).setPositiveButton("Save",(d,w)->{try{store.data().optJSONArray("diaryEntries").put(new JSONObject().put("id",store.next("seqDiary")).put("content",t.getText().toString()).put("date",new Date().toString()));store.save();render();}catch(Exception e){toast(e.getMessage());}}).setNegativeButton("Cancel",null).show();});add(b);for(int i=0;i<store.data().optJSONArray("diaryEntries").length();i++)add(tv(store.data().optJSONArray("diaryEntries").optJSONObject(i).optString("content"),14,TEXT));}
+    private void business(){add(tv("Businesses",24,TEXT));add(tv("Current: "+settings().optString("biz","My Business"),16,TEXT));Button b=btn("＋ Add Business");b.setOnClickListener(v->{EditText n=input("Business name");new AlertDialog.Builder(this).setTitle("Business").setView(n).setPositiveButton("Save",(d,w)->{try{String s=n.getText().toString().trim();if(s.isEmpty())throw new Exception();int id=store.next("seqBiz");store.data().optJSONArray("businesses").put(new JSONObject().put("id",id).put("name",s).put("owner",settings().optString("name","")));settings().put("biz",s);store.save();render();}catch(Exception e){toast("Invalid business");}}).setNegativeButton("Cancel",null).show();});add(b);}
+    private void settingsPage(){add(tv("Settings",24,TEXT));add(tv("Guru Shree\n"+settings().optString("name","")+"\n"+settings().optString("phone",""),16,TEXT));Button pin=btn("🔐 Set App PIN");pin.setOnClickListener(v->{EditText p=input("4–20 digit PIN");new AlertDialog.Builder(this).setTitle("App PIN").setView(p).setPositiveButton("Save",(d,w)->{try{String x=p.getText().toString();if(!x.matches("\\d{4,20}"))throw new Exception();String salt=UUID.randomUUID().toString();settings().put("pinSalt",salt).put("pinHash",LedgerStore.sha256(salt+":"+x));store.save();}catch(Exception e){toast("PIN must be 4–20 digits");}}).setNegativeButton("Cancel",null).show();});add(pin);Button rem=btn("🔔 Reminder Settings");rem.setOnClickListener(v->reminderSettings());add(rem);Button bk=btn("💾 Backup / Restore");bk.setOnClickListener(v->backup());add(bk);}
+    private void reminderSettings(){LinearLayout f=new LinearLayout(this);f.setOrientation(LinearLayout.VERTICAL);Switch e=new Switch(this);e.setText("Automatic reminders");e.setChecked(settings().optBoolean("reminderEnabled",true));EditText d=input("Days");d.setText(String.valueOf(settings().optInt("reminderDays",7)));f.addView(e);f.addView(d);new AlertDialog.Builder(this).setTitle("Reminder Settings").setView(f).setPositiveButton("Save",(x,w)->{try{settings().put("reminderEnabled",e.isChecked()).put("reminderDays",Math.max(1,Integer.parseInt(d.getText().toString())));store.save();}catch(Exception z){toast("Invalid settings");}}).setNegativeButton("Cancel",null).show();}
+    private void backup(){new AlertDialog.Builder(this).setTitle("Backup / Restore").setMessage("Backup file name: BSRPRO.Vault BACKUP FILE.vaultbak\nRestore validates the file and creates an emergency snapshot first.").setPositiveButton("Export",(d,w)->exportBackup()).setNeutralButton("Import",(d,w)->importBackup()).setNegativeButton("Close",null).show();}
+    private void exportBackup(){Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);i.setType("application/octet-stream");i.putExtra(Intent.EXTRA_TITLE,"BSRPRO.Vault BACKUP FILE.vaultbak");startActivityForResult(i,EXPORT);}
+    private void importBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("application/octet-stream");i.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(i,IMPORT);}
+    @Override protected void onActivityResult(int r,int result,Intent data){super.onActivityResult(r,result,data);if(result!=RESULT_OK||data==null||data.getData()==null)return;try{if(r==EXPORT){OutputStream o=getContentResolver().openOutputStream(data.getData());o.write(store.data().toString(2).getBytes(StandardCharsets.UTF_8));o.close();toast("BSRPRO.Vault BACKUP FILE saved");}else{InputStream in=getContentResolver().openInputStream(data.getData());store.importFrom(in);in.close();render();toast("Backup restored safely");}}catch(Exception e){toast("Backup failed: "+e.getMessage());}}
+    private void share(JSONObject c){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_TEXT,"नमस्ते "+nm(c)+" जी 🙏\nकुल बकाया: "+money(due(c))+"\nधन्यवाद\n"+settings().optString("biz","Guru Shree"));try{startActivity(Intent.createChooser(i,"Share statement"));}catch(Exception e){toast("No share app available");}}
+    private void sms(JSONObject c){String p=c.optString("phone","").replaceAll("\\D","");if(p.isEmpty()){toast("Mobile missing");return;}Intent i=new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:"+p));i.putExtra("sms_body","नमस्ते "+nm(c)+" जी 🙏\nबकाया: "+money(due(c)));startActivity(i);}
+    private void pdf(){try{File f=new File(getExternalFilesDir(null),"Guru-Shree-report.pdf");PdfDocument p=new PdfDocument();PdfDocument.Page q=p.startPage(new PdfDocument.PageInfo.Builder(595,842,1).create());Canvas c=q.getCanvas();Paint x=new Paint();Bitmap l=BitmapFactory.decodeResource(getResources(),R.drawable.logo);if(l!=null)c.drawBitmap(l,null,new RectF(40,25,100,85),x);x.setTextSize(24);c.drawText("Guru Shree",115,60,x);x.setTextSize(14);c.drawText("Customers: "+cs().length(),40,115,x);double d=0;for(int i=0;i<cs().length();i++)d+=due(cs().optJSONObject(i));c.drawText("Outstanding: "+money(d),40,145,x);p.finishPage(q);try(FileOutputStream o=new FileOutputStream(f)){p.writeTo(o);}p.close();toast("PDF saved: "+f.getAbsolutePath());}catch(Exception e){toast("PDF failed");}}
+    private void processReminders(){try{if(store.settings().optBoolean("reminderEnabled",true))ReminderScheduler.schedule(this);}catch(Exception ignored){}}
+    private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
 }
