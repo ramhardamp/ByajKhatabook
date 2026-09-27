@@ -61,6 +61,12 @@ jobs:
             verification.txt
           if-no-files-found: error
           retention-days: 30
+      - name: Enable KVM
+        run: |
+          set -euo pipefail
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+          test -e /dev/kvm
+
       - name: Native Android runtime test
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -74,7 +80,7 @@ jobs:
           disk-size: 6G
           emulator-options: -no-snapshot-save -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
           disable-animations: true
-          emulator-boot-timeout: 600
+          emulator-boot-timeout: 300
           script: |
             set -euo pipefail
             adb wait-for-device
