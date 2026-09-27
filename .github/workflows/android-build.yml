@@ -48,7 +48,7 @@ jobs:
           grep -q "package: name='$PACKAGE'" apk-badging.txt
           grep -q "application-label:'Guru Shree'" apk-badging.txt
           unzip -t "$APK" >/dev/null
-          grep -Eq "application-icon-160:\x27res/.*\\.webp\x27" apk-badging.txt
+          grep -q "application-icon-160:\x27res/.*\\.webp\x27" apk-badging.txt
           ! unzip -l "$APK" | grep -Eiq "androidx/webkit"
           echo "APK_VERIFY=PASS" | tee verification.txt
       - name: Upload APK
