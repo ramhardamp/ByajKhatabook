@@ -1202,7 +1202,7 @@ img, svg, video, canvas { max-width:100% !important; height:auto; }
           <span>Remember password on this device</span>
         </label>
         <button class="btn btn-primary" onclick="exportBackupFlow()">🔒 Create Backup</button>
-        <div class="backup-note">File format: <strong>BabaSitaRamProKhatbook.vaultbak</strong> · Password yaad rakhein!</div>
+        <div class="backup-note">File format: <strong>BSRPRO.Vault BACKUP FILE.vaultbak</strong> · Password yaad rakhein!</div>
         <div class="in-group" id="backupTextWrap" style="display:none;margin-top:10px;">
           <label class="in-label">Backup Text (Emergency fallback)</label>
           <textarea class="in" id="backupTextOutput" readonly style="min-height:80px;font-family:monospace;font-size:10px;"></textarea>
@@ -1331,7 +1331,7 @@ img, svg, video, canvas { max-width:100% !important; height:auto; }
 /* ===================================================== */
 
 const APP_NAME = 'BabaSitaRamProKhatbook';
-const BACKUP_FILENAME = 'BabaSitaRamProKhatbook.vaultbak';
+const BACKUP_FILENAME = 'BSRPRO.Vault BACKUP FILE.vaultbak';
 const APP_LOGO_VERSION = 5;
 const BUNDLED_LOGO = (location.host === 'appassets.androidplatform.net') ? '/assets/logo.webp' : 'logo.webp';
 
@@ -1618,10 +1618,28 @@ function loanElapsedMonths(l) {
 }
 function computeLiveLoanInterest(l) {
   const elapsed = loanElapsedMonths(l);
-  const t = Math.max(elapsed, l.duration || 0);
-  const p = l.principal || 0, rate = l.rate || 0;
-  if (l.interestType === 'compound') { const r = rate / 100; return p * Math.pow(1 + r, t) - p; }
-  return p * rate * t / 100;
+  const p = Number(l?.principal) || 0;
+  const rate = Number(l?.rate) || 0;
+  if (p <= 0 || rate <= 0 || elapsed <= 0) return 0;
+
+  // Duration is the agreed term, not a reason to accrue the full term
+  // immediately. Interest is based on the actual elapsed period.
+  const months = elapsed;
+
+  if (l.interestType === 'compound') {
+    // Rate is stored as a monthly rate. compFreq is the number of
+    // compounding periods per year: 12=monthly, 4=quarterly,
+    // 2=half-yearly, 1=yearly.
+    const periodsPerYear = [1, 2, 4, 12].includes(Number(l.compFreq))
+      ? Number(l.compFreq)
+      : 12;
+    const years = months / 12;
+    const periodicRate = (rate / 100) * (12 / periodsPerYear);
+    const periods = years * periodsPerYear;
+    return p * Math.pow(1 + periodicRate, periods) - p;
+  }
+
+  return p * rate * months / 100;
 }
 function loanOutstandingSplit(l) {
   const interest = l.totalInterest || 0;
@@ -1641,8 +1659,24 @@ function recalcCustomerByaaj(c) {
   c.byaaj.totalInterest = totalInterestDue;
 }
 function recalcAllByaaj() { customers.forEach(recalcCustomerByaaj); }
-function getTotalAmt(c) { return Math.abs(c.khata.balance) + (c.byaaj.totalInterest || 0); }
-function getTotals() { recalcAllByaaj(); let kh=0, by=0, bp=0, kc=0, lc=0; bizCustomers().forEach(c => { if (c.khata.balance !== 0) { kh += Math.abs(c.khata.balance); kc++; } if (c.byaaj.loans.length > 0) lc += c.byaaj.loans.length; by += c.byaaj.totalInterest || 0; bp += c.byaaj.totalPrincipal || 0; }); return { khata: kh, byaaj: by, byaajPrincipal: bp, total: kh+by, khataCount: kc, loanCount: lc }; }
+function getTotalAmt(c) {
+  const khataOutstanding = Math.abs(Number(c?.khata?.balance) || 0);
+  const byaaj = c?.byaaj || {};
+  const principalOutstanding = (byaaj.loans || []).reduce((sum, l) => sum + loanOutstandingSplit(l).outstandingPrincipal, 0);
+  const interestOutstanding = Number(byaaj.totalInterest) || 0;
+  return khataOutstanding + principalOutstanding + interestOutstanding;
+}
+function getTotals() {
+  recalcAllByaaj();
+  let kh = 0, by = 0, bp = 0, kc = 0, lc = 0;
+  bizCustomers().forEach(c => {
+    if (c.khata.balance !== 0) { kh += Math.abs(c.khata.balance); kc++; }
+    if (c.byaaj.loans.length > 0) lc += c.byaaj.loans.length;
+    by += Number(c.byaaj.totalInterest) || 0;
+    bp += (c.byaaj.loans || []).reduce((sum, l) => sum + loanOutstandingSplit(l).outstandingPrincipal, 0);
+  });
+  return { khata: kh, byaaj: by, byaajPrincipal: bp, total: kh + bp + by, khataCount: kc, loanCount: lc };
+}
 function showToast(msg, type) { const el = document.getElementById('toastEl'); el.textContent = msg; el.className = 'toast show ' + (type || ''); setTimeout(() => { el.className = 'toast'; }, 3000); }
 function emptyState(ico, title, sub) { return `<div class="empty"><div class="empty-ico">${ico}</div><div class="empty-t">${title}</div><div class="empty-s">${sub}</div></div>`; }
 function openModal(id) { document.getElementById(id).style.display = 'flex'; }
@@ -2664,8 +2698,9 @@ function confirmEntryFull() {
     const rate = parseFloat(document.getElementById('entryRate').value) || 0;
     const dur = parseInt(document.getElementById('entryDuration').value) || 0;
     if (rate <= 0 || dur <= 0) { showToast('Rate and duration required', 'error'); return; }
-    const interest = entryIntType === 'simple' ? (amt * rate * dur / 100) : (amt * Math.pow(1 + (rate/100), dur) - amt);
-    c.byaaj.loans.push({ id: 100 + c.byaaj.loans.length + 1, principal: amt, rate, startDate: ds, rawStartDate: dv, duration: dur, interestType: entryIntType, compFreq: entryIntType === 'compound' ? 12 : null, totalInterest: interest, partPaid: 0, photo: entryByaajPhotoBase64 || '' });
+    const newLoan = { id: 100 + c.byaaj.loans.length + 1, principal: amt, rate, startDate: ds, rawStartDate: dv, duration: dur, interestType: entryIntType, compFreq: entryIntType === 'compound' ? 12 : null, totalInterest: 0, partPaid: 0, photo: entryByaajPhotoBase64 || '' };
+    newLoan.totalInterest = computeLiveLoanInterest(newLoan);
+    c.byaaj.loans.push(newLoan);
     c.byaaj.totalPrincipal += amt;
     c.byaaj.totalInterest += interest;
     logAudit('add', 'Loan', `${c.name}: ₹${amt}`);
