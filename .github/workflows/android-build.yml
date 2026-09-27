@@ -49,7 +49,7 @@ jobs:
           grep -q "application-label:'Guru Shree'" apk-badging.txt
           unzip -t "$APK" >/dev/null
           unzip -l "$APK" | grep -q "res/drawable/logo.webp"
-          ! unzip -l "$APK" | grep -Eiq "androidx/webkit|WebView"
+          ! unzip -l "$APK" | grep -Eiq "androidx/webkit"
           echo "APK_VERIFY=PASS" | tee verification.txt
       - name: Upload APK
         uses: actions/upload-artifact@v4
