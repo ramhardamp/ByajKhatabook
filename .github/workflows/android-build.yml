@@ -82,7 +82,7 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 300
           script: |
-            set -euo pipefail
+            set -eu
             adb wait-for-device
             adb install -r "$GITHUB_WORKSPACE/$APK"
             adb shell am force-stop "$PACKAGE"
