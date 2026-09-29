@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- BEFORE: three flat colours (bg #F7F8FC, text, one accent #4F46E5) reused everywhere.
+         AFTER: a full light/dark palette so cards, dues, credits and the header all read at a
+         glance, and the app matches the phone's system theme instead of staying white always. -->
+    <color name="bk_primary">#3730A9</color>
+    <color name="bk_primary_dark">#241C78</color>
+    <color name="bk_accent">#D9A441</color>
+    <color name="bk_bg">#F5F6FB</color>
+    <color name="bk_surface">#FFFFFF</color>
+    <color name="bk_surface_dim">#EEF0F9</color>
+    <color name="bk_text">#1B1E2B</color>
+    <color name="bk_muted">#6B7080</color>
+    <color name="bk_outline">#E1E3EE</color>
+    <color name="bk_due">#C22B2B</color>
+    <color name="bk_credit">#0F8A4C</color>
+    <color name="bk_overdue_bg">#FCE9E9</color>
+    <color name="bk_white">#FFFFFF</color>
+</resources>

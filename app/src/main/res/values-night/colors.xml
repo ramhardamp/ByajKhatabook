@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bk_primary">#8B85E8</color>
+    <color name="bk_primary_dark">#6A63D6</color>
+    <color name="bk_accent">#E8BE6E</color>
+    <color name="bk_bg">#14151F</color>
+    <color name="bk_surface">#1E2030</color>
+    <color name="bk_surface_dim">#191A26</color>
+    <color name="bk_text">#EEEFF7</color>
+    <color name="bk_muted">#9A9EB2</color>
+    <color name="bk_outline">#33354A</color>
+    <color name="bk_due">#F2857E</color>
+    <color name="bk_credit">#5FD394</color>
+    <color name="bk_overdue_bg">#3A2226</color>
+    <color name="bk_white">#FFFFFF</color>
+</resources>

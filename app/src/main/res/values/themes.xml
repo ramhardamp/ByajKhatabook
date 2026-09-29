@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- BEFORE: android:style/Theme.Material.Light.NoActionBar, one accent colour, no dark mode.
+         AFTER: Material 3 with a real colour scheme that also has a values-night counterpart,
+         so the whole app (dialogs, buttons, ripples) gets consistent premium styling for free. -->
+    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/bk_primary</item>
+        <item name="colorPrimaryDark">@color/bk_primary_dark</item>
+        <item name="colorOnPrimary">@color/bk_white</item>
+        <item name="colorSecondary">@color/bk_accent</item>
+        <item name="colorOnSecondary">@color/bk_text</item>
+        <item name="colorSurface">@color/bk_surface</item>
+        <item name="colorOnSurface">@color/bk_text</item>
+        <item name="android:colorBackground">@color/bk_bg</item>
+        <item name="android:statusBarColor">@color/bk_bg</item>
+        <item name="android:navigationBarColor">@color/bk_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="materialAlertDialogTheme">@style/AppTheme.Dialog</item>
+    </style>
+
+    <style name="AppTheme.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorPrimary">@color/bk_primary</item>
+    </style>
+</resources>

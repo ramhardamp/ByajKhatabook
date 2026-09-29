@@ -1,0 +1,14 @@
+{
+  "name": "Guru Shree - ByajKhatabook",
+  "short_name": "Guru Shree",
+  "description": "Ledger, byaaj (interest) and diary manager",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5F6FB",
+  "theme_color": "#3730A9",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "logo.webp", "sizes": "1024x1024", "type": "image/webp", "purpose": "any maskable" }
+  ]
+}

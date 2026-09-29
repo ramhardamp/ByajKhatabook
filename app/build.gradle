@@ -36,4 +36,24 @@ android {
         }
         debug { minifyEnabled false }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
+
+// BEFORE: not set — relied on the CI runner's default platform encoding for source files that
+// contain Hindi text and the ₹ symbol. On a runner where that default isn't UTF-8, those
+// strings would silently get mangled at compile time with no error shown.
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+
+dependencies {
+    // BEFORE: no dependencies block at all — every widget was a plain android.widget.* view
+    // with hand-set colours. These three libraries give MaterialButton, MaterialCardView,
+    // TextInputLayout and MaterialAlertDialogBuilder (ripples, elevation, rounded corners,
+    // day/night colours) without changing minSdk or adding WebView (the CI check explicitly
+    // forbids androidx/webkit, so it is deliberately not used here).
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.core:core:1.13.1'
 }

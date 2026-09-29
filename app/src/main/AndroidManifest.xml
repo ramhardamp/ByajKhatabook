@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <application
+        android:name=".App"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:icon="@drawable/logo"
@@ -12,15 +13,32 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="false">
+
         <receiver android:name=".ReminderReceiver" android:exported="false" />
         <receiver android:name=".ReminderBootReceiver" android:exported="false">
             <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter>
         </receiver>
-        <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize">
+
+        <!-- NEW: shown before MainActivity whenever a PIN is set (LedgerStore.hasPin()). -->
+        <activity android:name=".PinLockActivity" android:exported="false"
+            android:theme="@style/AppTheme" android:screenOrientation="portrait" />
+
+        <activity android:name=".MainActivity" android:exported="true"
+            android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- NEW: lets exported PDF/backup files be shared to WhatsApp/Gmail/etc. Before, PDFs
+             were only saved to a folder the user had no easy way to open or send. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.babasitaram.pro.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>
