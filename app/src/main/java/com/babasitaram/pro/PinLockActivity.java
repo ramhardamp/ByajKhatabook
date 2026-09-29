@@ -62,7 +62,7 @@ public class PinLockActivity extends AppCompatActivity {
         root.setPadding(dp(24), dp(64), dp(24), dp(24));
 
         TextView title = new TextView(this);
-        title.setText("🔒  Guru Shree");
+        title.setText("🔒  " + getString(R.string.app_name));
         title.setTextSize(24);
         title.setTypeface(null, android.graphics.Typeface.BOLD);
         title.setTextColor(Theme.color(this, R.color.bk_text));
@@ -156,7 +156,7 @@ public class PinLockActivity extends AppCompatActivity {
     }
 
     private void confirmExit() {
-        new MaterialAlertDialogBuilder(this).setTitle("Exit Guru Shree?")
+        new MaterialAlertDialogBuilder(this).setTitle("Exit " + getString(R.string.app_name) + "?")
                 .setNegativeButton("Stay", null)
                 .setPositiveButton("Exit", (d, w) -> finishAffinity())
                 .show();

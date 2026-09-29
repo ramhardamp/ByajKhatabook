@@ -5,15 +5,27 @@ plugins {
 def releaseStorePassword = System.getenv('RELEASE_STORE_PASSWORD')
 def releaseKeyPassword = System.getenv('RELEASE_KEY_PASSWORD')
 
+// BEFORE: applicationId/label/version were hardcoded here (and again in AndroidManifest.xml
+// and strings.xml). AFTER: read from gradle.properties — see the comment there for why this
+// matters (a different APP_ID is what makes a new app install *alongside* this one on a phone
+// instead of silently overwriting it).
+def appId = project.findProperty('APP_ID') ?: 'com.babasitaram.pro'
+def appName = project.findProperty('APP_NAME') ?: 'Guru Shree'
+def appVersionCode = ((project.findProperty('APP_VERSION_CODE') ?: '2') as String).toInteger()
+def appVersionName = project.findProperty('APP_VERSION_NAME') ?: '2.0.0-native'
+
 android {
+    // Fixed on purpose: this must match the actual `package com.babasitaram.pro;` line in
+    // every .java file, so it does NOT change when you rebrand — only applicationId does.
     namespace 'com.babasitaram.pro'
     compileSdk 35
     defaultConfig {
-        applicationId 'com.babasitaram.pro'
+        applicationId appId
         minSdk 24
         targetSdk 35
-        versionCode 2
-        versionName '2.0.0-native'
+        versionCode appVersionCode
+        versionName appVersionName
+        resValue "string", "app_name", appName
     }
     signingConfigs {
         release {

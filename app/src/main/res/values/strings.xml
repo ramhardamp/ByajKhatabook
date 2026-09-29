@@ -1,1 +1,5 @@
-<resources><string name="app_name">Guru Shree</string></resources>
+<resources>
+    <!-- app_name is intentionally NOT declared here — it's generated at build time from
+         gradle.properties' APP_NAME via android.defaultConfig.resValue(), so renaming the app
+         only ever needs one edit, in gradle.properties. -->
+</resources>

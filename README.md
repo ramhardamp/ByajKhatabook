@@ -28,6 +28,25 @@ update:
 Do **not** commit `release.keystore` itself to the repository — GitHub Secrets is the safe place
 for it.
 
+## Building a second, differently-named app from this same codebase
+
+If you ever reuse this project to build a **different** app (a different client's business, a
+different brand), edit only `gradle.properties` at the repo root — four lines at the top marked
+`APP_ID` / `APP_NAME` / `APP_VERSION_CODE` / `APP_VERSION_NAME`. `APP_ID` is what matters most:
+as long as it's different from `com.babasitaram.pro`, Android treats it as a completely separate
+app and installs it **side by side** on the same phone instead of overwriting this one, no matter
+how similar the two apps' visible names are.
+
+For a second app you should also:
+- generate a **separate** signing keystore and separate `RELEASE_*` GitHub Secrets for it (don't
+  reuse this app's keystore — keep each app's release key independent)
+- replace `app/src/main/res/drawable/logo.webp` (and `app/src/main/assets/logo.webp`) with the
+  new app's logo
+- if you're doing this in a copy of the repo (not a branch), also update the two `grep -q`
+  package/label checks near the top of `.github/workflows/android-build.yml` to match the new
+  `APP_ID`/`APP_NAME` — they currently verify this specific app's identity on purpose, to catch
+  accidental renames going out under the wrong package.
+
 ## What this app does
 
 Three things, for a local lending/khata business: a **customer ledger** (udhaar/jama), **byaaj**

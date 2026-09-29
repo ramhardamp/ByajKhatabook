@@ -175,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
         bar.setBackgroundColor(Theme.color(this, R.color.bk_surface));
         bar.setPadding(dp(16), dp(14), dp(16), dp(14));
         TextView title = new TextView(this);
-        title.setText("Guru Shree");
+        title.setText(getString(R.string.app_name));
         title.setTextSize(20);
         title.setTypeface(null, Typeface.BOLD);
         title.setTextColor(Theme.color(this, R.color.bk_text));
@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
     private void back() {
         if (!stack.isEmpty()) { screen = stack.pop(); render(); }
         else if (!screen.equals("home")) { screen = "home"; render(); }
-        else new MaterialAlertDialogBuilder(this).setTitle("Exit Guru Shree?")
+        else new MaterialAlertDialogBuilder(this).setTitle("Exit " + getString(R.string.app_name) + "?")
                 .setNegativeButton("Stay", null).setPositiveButton("Exit", (d, w) -> finish()).show();
     }
 
@@ -800,7 +800,7 @@ public class MainActivity extends AppCompatActivity {
             Canvas cv = cover.getCanvas();
             if (logo != null) cv.drawBitmap(logo, null, new RectF(margin, 25, margin + 60, 85), paint);
             paint.setTextSize(24);
-            cv.drawText(settings().optString("biz", "Guru Shree"), margin + 75, 60, paint);
+            cv.drawText(settings().optString("biz", getString(R.string.app_name)), margin + 75, 60, paint);
             paint.setTextSize(12);
             cv.drawText("Generated " + Calc.display(System.currentTimeMillis()), margin + 75, 80, paint);
             paint.setTextSize(14);
@@ -1176,7 +1176,7 @@ public class MainActivity extends AppCompatActivity {
         double due = Calc.totalDue(store, c, System.currentTimeMillis());
         Intent i = new Intent(Intent.ACTION_SEND);
         i.setType("text/plain");
-        i.putExtra(Intent.EXTRA_TEXT, "नमस्ते " + nm(c) + " जी 🙏\nकुल बकाया: " + Calc.inr(due) + "\nधन्यवाद\n" + settings().optString("biz", "Guru Shree"));
+        i.putExtra(Intent.EXTRA_TEXT, "नमस्ते " + nm(c) + " जी 🙏\nकुल बकाया: " + Calc.inr(due) + "\nधन्यवाद\n" + settings().optString("biz", getString(R.string.app_name)));
         try { startActivity(Intent.createChooser(i, "Share statement")); }
         catch (Exception e) { toast("No share app available"); }
     }

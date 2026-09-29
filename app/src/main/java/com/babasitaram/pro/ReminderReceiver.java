@@ -100,7 +100,7 @@ public final class ReminderReceiver extends BroadcastReceiver {
         PendingIntent pi = PendingIntent.getActivity(c, 1, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(c, CHANNEL) : new Notification.Builder(c);
         b.setSmallIcon(R.drawable.logo)
-                .setContentTitle("Guru Shree Recovery")
+                .setContentTitle(c.getString(R.string.app_name) + " Recovery")
                 .setContentText(n + " reminder(s) due • " + Calc.inr(total))
                 .setAutoCancel(true)
                 .setContentIntent(pi);
