@@ -28,12 +28,32 @@ jobs:
           set -euo pipefail
           gradle wrapper --gradle-version 8.9 --distribution-type bin
           chmod +x gradlew
-      - name: Generate CI signing key
+      - name: Set up release signing key
         run: |
           set -euo pipefail
-          keytool -genkeypair -v -keystore release.keystore -storepass "CI-$GITHUB_RUN_ID-key" -keypass "CI-$GITHUB_RUN_ID-key" -alias release -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=Guru Shree App, OU=Release, O=BabaSitaRam, L=Indore, ST=Madhya Pradesh, C=IN"
-          echo "RELEASE_STORE_PASSWORD=CI-$GITHUB_RUN_ID-key" >> "$GITHUB_ENV"
-          echo "RELEASE_KEY_PASSWORD=CI-$GITHUB_RUN_ID-key" >> "$GITHUB_ENV"
+          # BEFORE: a brand-new random keystore was generated on every single run, so every
+          # build had a different signature and Android refuses to install an "update" signed
+          # by a different key — users had to uninstall (losing local data) before every update.
+          # AFTER: if the repo owner has added a persistent keystore as GitHub Secrets
+          # (RELEASE_KEYSTORE_BASE64 / RELEASE_STORE_PASSWORD / RELEASE_KEY_PASSWORD, see the
+          # project README), that key is reused every time so updates install cleanly. Until
+          # those secrets are added, it falls back to the old ephemeral per-run key so CI keeps
+          # working — but every such build remains a fresh, non-upgradable signature.
+          if [ -n "${RELEASE_KEYSTORE_BASE64:-}" ] && [ -n "${RELEASE_STORE_PASSWORD:-}" ] && [ -n "${RELEASE_KEY_PASSWORD:-}" ]; then
+            echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > release.keystore
+            echo "RELEASE_STORE_PASSWORD=$RELEASE_STORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "Using persistent signing key from repository secrets."
+          else
+            keytool -genkeypair -v -keystore release.keystore -storepass "CI-$GITHUB_RUN_ID-key" -keypass "CI-$GITHUB_RUN_ID-key" -alias release -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=Guru Shree App, OU=Release, O=BabaSitaRam, L=Indore, ST=Madhya Pradesh, C=IN"
+            echo "RELEASE_STORE_PASSWORD=CI-$GITHUB_RUN_ID-key" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_PASSWORD=CI-$GITHUB_RUN_ID-key" >> "$GITHUB_ENV"
+            echo "::warning::No persistent signing key configured — this build uses a throwaway key and CANNOT be installed as an update over a previous install. See README for how to add one."
+          fi
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       - name: Build release APK
         run: |
           set -euo pipefail
