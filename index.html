@@ -628,9 +628,12 @@ textarea.in { resize: vertical; min-height: 60px; }
 .delete-reason-btn.confirm { background: var(--credit); color: white; }
 
 /* KEYBOARD FIX — critical */
+/* BUG FIX: this used to BOTH shrink the whole panel's height by the keyboard height AND add
+   that same keyboard height again as bottom padding inside it — content was pushed up by
+   roughly double the actual keyboard height. Now only the inner scrollable body reserves space
+   for the keyboard; the outer panel stays full height so nothing jumps or over-shrinks. */
 .entry-full.keyboard-open .entry-body,
 .diary-entry-full.keyboard-open .de-body { padding-bottom: calc(24px + var(--bspk-keyboard-height, 0px) + env(safe-area-inset-bottom, 0px)); }
-.entry-full.keyboard-open, .diary-entry-full.keyboard-open { height: calc(100dvh - var(--bspk-keyboard-height, 0px)); max-height: calc(100dvh - var(--bspk-keyboard-height, 0px)); }
 .entry-full.keyboard-open .entry-confirm-wrap { position: sticky; bottom: 0; z-index: 20; padding-bottom: 10px; }
 .entry-full .amount-input, .entry-full .in, .diary-entry-full input, .diary-entry-full textarea { scroll-margin-bottom: 220px; }
 
@@ -3729,10 +3732,36 @@ function keepFocusedInputVisible(el) {
 }
 document.addEventListener('focusin',e=>{ if(e.target.matches && e.target.matches('input,textarea,select')) { keepFocusedInputVisible(e.target); } });
 document.addEventListener('input', e => { if(e.target.matches && e.target.matches('input,textarea,select')) keepFocusedInputVisible(e.target); });
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize',()=>{ const a=document.activeElement; if(a && a.matches && a.matches('input,textarea,select')) keepFocusedInputVisible(a); });
-  window.visualViewport.addEventListener('scroll',()=>{ const a=document.activeElement; if(a && a.matches && a.matches('input,textarea,select')) { const vv=window.visualViewport; const kb=vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0; document.documentElement.style.setProperty('--bspk-keyboard-height', kb+'px'); } });
+// BUG FIX: --bspk-keyboard-height was only ever recomputed when an <input> was the active
+// element, so if the keyboard closed without a new field being focused first (e.g. the user
+// just tapped outside the form), the stale non-zero value stuck around and kept padding a
+// later screen as if the keyboard were still open. This now always recomputes on every
+// viewport resize, and also clears both the variable and the keyboard-open classes shortly
+// after any field loses focus (if nothing else has taken focus by then).
+function syncKeyboardHeight() {
+  const vv = window.visualViewport;
+  const kb = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+  document.documentElement.style.setProperty('--bspk-keyboard-height', kb + 'px');
+  const entry = document.getElementById('entryFull'), diary = document.getElementById('diaryEntryPage');
+  if (entry) entry.classList.toggle('keyboard-open', kb > 80);
+  if (diary) diary.classList.toggle('keyboard-open', kb > 80);
+  return kb;
 }
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncKeyboardHeight);
+  window.visualViewport.addEventListener('scroll', syncKeyboardHeight);
+}
+document.addEventListener('focusout', e => {
+  if (!(e.target && e.target.matches && e.target.matches('input,textarea,select'))) return;
+  setTimeout(() => {
+    const a = document.activeElement;
+    if (a && a.matches && a.matches('input,textarea,select')) return; // focus moved to another field
+    document.documentElement.style.setProperty('--bspk-keyboard-height', '0px');
+    const entry = document.getElementById('entryFull'), diary = document.getElementById('diaryEntryPage');
+    if (entry) entry.classList.remove('keyboard-open');
+    if (diary) diary.classList.remove('keyboard-open');
+  }, 150);
+});
 window.addEventListener('orientationchange',()=>setTimeout(()=>{ const a=document.activeElement; if(a && a.matches && a.matches('input,textarea,select')) keepFocusedInputVisible(a); },150));
 
 /* ============ APP LIFECYCLE ============ */
