@@ -89,6 +89,21 @@ body { display: flex; justify-content: center; align-items: stretch; }
 
 /* HOME HERO */
 .hero { background: var(--gradient); color: white; padding: 18px 16px 20px; }
+/* BEFORE: hero showed one merged "Net Position" number plus a small khata/byaaj split —
+   informative but not the at-a-glance pattern khata-book apps are known for. AFTER: the two
+   numbers a shopkeeper actually checks first — what customers owe you, and what you owe
+   suppliers — are the large, primary content of the hero, side by side. */
+.hero-top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.hero-greet-inline { font-size: 14px; font-weight: 800; opacity: 0.95; }
+.hero-search-btn { width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(255,255,255,0.2); color: white; font-size: 15px; cursor: pointer; }
+.hero-getgive { display: flex; align-items: stretch; }
+.hero-gg-cell { flex: 1; cursor: pointer; }
+.hero-gg-div { width: 1px; background: rgba(255,255,255,0.28); margin: 2px 14px; }
+.hero-gg-l { font-size: 11px; font-weight: 800; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.3px; }
+.hero-gg-v { font-size: 26px; font-weight: 900; margin-top: 3px; letter-spacing: -0.5px; }
+.hero-gg-s { font-size: 10.5px; opacity: 0.8; font-weight: 700; margin-top: 2px; }
+.hero-byaaj-pill { margin-top: 14px; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.22); border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.home-search-wrap { padding: 12px 16px 4px; }
 .hero-inner { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .hero-left { flex: 1; min-width: 0; }
 .hero-right { flex-shrink: 0; width: 120px; height: 125px; display: flex; align-items: center; justify-content: center; }
@@ -950,20 +965,27 @@ img, svg, video, canvas { max-width:100% !important; height:auto; }
     <div class="screen active" id="s-home">
       <div class="scrollable-part">
         <div class="hero">
-          <div class="hero-inner">
-            <div class="hero-left">
-              <div class="hero-greet">WELCOME BACK</div>
-              <div class="hero-name" id="heroName">Hello, User</div>
-              <div class="hero-label">NET POSITION</div>
-              <div class="hero-amount" id="heroNet">₹0</div>
-              <div class="hero-split">
-                <div class="hero-cell"><div class="hero-cell-l">Khata</div><div class="hero-cell-v" id="heroKhata">₹0</div></div>
-                <div class="hero-cell"><div class="hero-cell-l">Byaaj</div><div class="hero-cell-v" id="heroByaaj">₹0</div></div>
-              </div>
-            </div>
-            <div class="hero-right" id="heroBaba"><div class="baba-placeholder">🧘‍♂️</div></div>
+          <div class="hero-top-row">
+            <div class="hero-greet-inline"><span id="heroName">Hello, User</span></div>
+            <button class="hero-search-btn" onclick="switchTab('ledger');document.getElementById('searchInput')?.focus()" aria-label="Search customers">🔍</button>
           </div>
+          <div class="hero-getgive">
+            <div class="hero-gg-cell get" onclick="switchTab('ledger');setFilter('khata', document.querySelector('.chip[data-f=khata]'))">
+              <div class="hero-gg-l">You'll Get</div>
+              <div class="hero-gg-v" id="heroGet">₹0</div>
+              <div class="hero-gg-s">From customers</div>
+            </div>
+            <div class="hero-gg-div"></div>
+            <div class="hero-gg-cell give" onclick="switchTab('ledger');setFilter('supplier', document.querySelector('.chip[data-f=supplier]'))">
+              <div class="hero-gg-l">You'll Give</div>
+              <div class="hero-gg-v" id="heroGive">₹0</div>
+              <div class="hero-gg-s">To suppliers</div>
+            </div>
+          </div>
+          <div class="hero-byaaj-pill" onclick="switchTab('ledger');setFilter('byaaj', document.querySelector('.chip[data-f=byaaj]'))">🔥 Byaaj Interest Outstanding: <b id="heroByaaj">₹0</b></div>
         </div>
+        <div class="home-search-wrap"><div class="search"><span class="search-ico">🔍</span><input type="text" id="homeSearchInput" placeholder="Customer ya supplier khojein" oninput="homeSearchJump(this.value)"></div></div>
+        <div class="acc-item" id="accMoreReports"><div class="acc-head" onclick="toggleAcc('accMoreReports')"><span>📊 More Reports &amp; Analytics</span><span class="acc-head-arrow">›</span></div><div class="acc-body">
         <div class="report-grid">
           <div class="rc red" onclick="switchTab('ledger');setFilter('khata', document.querySelector('.chip[data-f=khata]'))"><div class="rc-l">💰 You'll Get</div><div class="rc-v" id="rGet">₹0</div><div class="rc-sub">From customers</div></div>
           <div class="rc purple" onclick="switchTab('ledger');setFilter('supplier', document.querySelector('.chip[data-f=supplier]'))"><div class="rc-l">💸 You'll Give</div><div class="rc-v" id="rGive">₹0</div><div class="rc-sub">To suppliers</div></div>
@@ -971,6 +993,7 @@ img, svg, video, canvas { max-width:100% !important; height:auto; }
           <div class="rc blue" onclick="switchTab('ledger');setFilter('byaaj', document.querySelector('.chip[data-f=byaaj]'))"><div class="rc-l">📊 Total</div><div class="rc-v" id="rTotal">₹0</div><div class="rc-sub">Byaaj Principal</div></div>
         </div>
         <div class="chart-card"><div class="chart-title">📈 Analytics — Last 6 Months</div><div class="chart-bars" id="analyticsBars"></div></div>
+        </div></div>
         <div class="acc-item" id="accPL"><div class="acc-head" onclick="toggleAcc('accPL')"><span>💼 Profit & Loss</span><span class="acc-head-arrow">›</span></div><div class="acc-body">
           <div class="report-row"><div class="report-rank green">↑</div><div class="report-info"><div class="report-name">Total Income</div></div><div class="report-amt green" id="plIncome">₹0</div></div>
           <div class="report-row"><div class="report-rank top">↓</div><div class="report-info"><div class="report-name">Total Expense</div></div><div class="report-amt red" id="plExpense">₹0</div></div>
@@ -1784,17 +1807,12 @@ function setFilter(f, btn) { currentFilter = f; document.querySelectorAll('#s-le
 function renderHome() {
   recalcAllByaaj();
   const tt = getTotals();
-  document.getElementById('heroNet').textContent = fmt(tt.total);
-  document.getElementById('heroKhata').textContent = fmt(tt.khata);
-  document.getElementById('heroByaaj').textContent = fmt(tt.byaaj);
   document.getElementById('heroName').textContent = 'Hello, ' + (settings.name || 'User').split(' ')[0];
-  const b = settings.branding || {};
-  const heroBaba = document.getElementById('heroBaba');
-  const heroLogo = b.babaImage;
-  if (heroLogo) heroBaba.innerHTML = '<img src="' + heroLogo + '" alt="Guru Shree App" onerror="this.parentElement.innerHTML=\'<div class=&quot;baba-placeholder&quot;>🧘‍♂️</div>\'">';
-  else heroBaba.innerHTML = '<div class="baba-placeholder">🧘‍♂️</div>';
   let totalGet = 0, totalGive = 0;
   bizCustomers().forEach(c => { if (c.type === 'customer' && c.khata.balance < 0) totalGet += Math.abs(c.khata.balance); if (c.type === 'supplier' && c.khata.balance > 0) totalGive += c.khata.balance; });
+  document.getElementById('heroGet').textContent = fmt(totalGet);
+  document.getElementById('heroGive').textContent = fmt(totalGive);
+  document.getElementById('heroByaaj').textContent = fmt(tt.byaaj);
   document.getElementById('rGet').textContent = fmt(totalGet);
   document.getElementById('rGive').textContent = fmt(totalGive);
   document.getElementById('rByaaj').textContent = fmt(tt.byaaj);
@@ -1826,6 +1844,15 @@ function renderHome() {
 }
 
 /* LEDGER */
+// NEW: the home screen's own search box hands off to the ledger's live search + list rather
+// than duplicating filtering logic — type on Home, land on the already-filtered Ledger.
+function homeSearchJump(v) {
+  if (!v) return;
+  switchTab('ledger');
+  const si = document.getElementById('searchInput');
+  if (si) { si.value = v; si.focus(); try { si.setSelectionRange(v.length, v.length); } catch (_) {} }
+  scheduleLedgerRender();
+}
 let ledgerRenderTimer = null;
 function scheduleLedgerRender() { clearTimeout(ledgerRenderTimer); ledgerRenderTimer = setTimeout(() => { ledgerRenderTimer = null; renderLedger(); }, 50); }
 function renderLedger() {
