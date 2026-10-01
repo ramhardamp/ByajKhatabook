@@ -81,6 +81,27 @@ jobs:
             verification.txt
           if-no-files-found: error
           retention-days: 30
+      - name: Read app version
+        id: appver
+        run: |
+          set -euo pipefail
+          V="$(grep '^APP_VERSION_NAME=' gradle.properties | cut -d= -f2)"
+          echo "name=$V" >> "$GITHUB_OUTPUT"
+      - name: Publish GitHub Release
+        # NEW: previously the signed APK only ever landed in the 30-day Actions artifact, which
+        # isn't a stable, easy-to-find download link. Every successful build on `main` now also
+        # publishes/updates a GitHub Release with the APK attached directly — a permanent link
+        # the user (or their customers) can download the app from, same as a normal app release.
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.appver.outputs.name }}
+          name: Guru Shree v${{ steps.appver.outputs.name }}
+          body: Automated build from commit ${{ github.sha }}. See apk-badging.txt in the build artifact for package/label verification details.
+          files: app/build/outputs/apk/release/app-release.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Enable KVM
         run: |
           set -euo pipefail
